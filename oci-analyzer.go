@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
@@ -19,37 +20,70 @@ type SyftJSON struct {
 	} `json:"manifests"`
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: syft-analyzer <syft_output_file1.json> ... <syft_output_fileN.json>")
-		os.Exit(1)
-	}
+type DiveJSON struct {
+	Layers []struct {
+		Index     int    `json:"index"`
+		ID        string `json:"id"`
+		DigestID  string `json:"digestId"`
+		SizeBytes int64  `json:"sizeBytes"` // to represent GB sizes
+		Command   string `json:"command"`
+	} `json:"layer"`
+}
 
-	distinctOS := make(map[string]map[string]struct{})
+func main() {
+	// if len(os.Args) < 2 {
+	// 	fmt.Println("Usage: syft-analyzer <syft_output_file1.json> ... <syft_output_fileN.json>")
+	// 	os.Exit(1)
+	// }
+
+	diveFiles := flag.String("dive-files", "", "list of dive files separated by whitespace")
+	syftFiles := flag.String("syft-files", "", "list of syft-files separated by whitespace")
+
+	// Parse the flags
+	flag.Parse()
+
+	syftFilesSlc := strings.Split(*syftFiles, " ")
+	diveFilesSlc := strings.Split(*diveFiles, " ")
+
+	distinctOS := make(map[string]map[string]struct{ size string })
 	distinctPackages := make(map[string]int)
 	distinctLanguages := make(map[string]int)
 	distinctRuntimes := make(map[string]int)
 
-	for _, file := range os.Args[1:] {
-		data, err := os.ReadFile(file)
+	// parse the syft files and gather usefull information
+	for idx := range syftFilesSlc {
+		syftData, err := os.ReadFile(syftFilesSlc[idx])
+		if err != nil {
+			fmt.Printf("Error reading file: %v\n", err)
+			os.Exit(1)
+		}
+
+		diveData, err := os.ReadFile(diveFilesSlc[idx])
 		if err != nil {
 			fmt.Printf("Error reading file: %v\n", err)
 			os.Exit(1)
 		}
 
 		var syftOutput SyftJSON
-		err = json.Unmarshal(data, &syftOutput)
+		err = json.Unmarshal(syftData, &syftOutput)
 		if err != nil {
-			fmt.Printf("Error parsing JSON: %v\n", err)
+			fmt.Printf("Error parsing syft JSON: %v\n", err)
+			os.Exit(1)
+		}
+
+		var diveOutput DiveJSON
+		err = json.Unmarshal(diveData, &diveOutput)
+		if err != nil {
+			fmt.Printf("Error parsing dive JSON: %v\n", err)
 			os.Exit(1)
 		}
 
 		// Aggregate base OS statistics
 		osName, version := extractOSNameAndVersion(syftOutput.Metadata.Distro)
 		if distinctOS[osName] == nil {
-			distinctOS[osName] = make(map[string]struct{})
+			distinctOS[osName] = make(map[string]struct{ size string })
 		}
-		distinctOS[osName][version] = struct{}{}
+		distinctOS[osName][version] = struct{ size string }{convertBytesToHumanReadableString(diveOutput.Layers[0].SizeBytes)}
 
 		// Aggregate package statistics
 		for _, manifest := range syftOutput.Manifests {
@@ -64,10 +98,14 @@ func main() {
 	fmt.Println("Base OS Statistics:")
 	for os, versionsSet := range distinctOS {
 		versions := make([]string, 0, len(versionsSet))
+		osVersionSizes := make([]string, 0, len(versionsSet))
 		for version := range versionsSet {
 			versions = append(versions, version)
+			osVersionSizes = append(osVersionSizes, versionsSet[version].size)
 		}
-		fmt.Printf("%s: %d (versions: %s)\n", os, len(versionsSet), strings.Join(versions, ", "))
+		fmt.Printf("OS: %s\n", os)
+		fmt.Printf("%d (versions: %s)\n", len(versionsSet), strings.Join(versions, ", "))
+		fmt.Printf("%d (sizes: %s)\n", len(versionsSet), strings.Join(osVersionSizes, ", "))
 	}
 
 	fmt.Println("\nPackage Statistics:")
@@ -123,4 +161,20 @@ func extractPackageName(pkgURL string) string {
 	cleanURL = strings.ReplaceAll(cleanURL, "%2B", "+")
 	cleanURL = strings.ReplaceAll(cleanURL, "%2F", "/")
 	return cleanURL
+}
+
+func convertBytesToHumanReadableString(sizeBytes int64) string {
+	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
+
+	if sizeBytes == 0 {
+		return "0B"
+	}
+	size := float64(sizeBytes)
+	i := 0
+	for size >= 1024 && i < len(units)-1 {
+		size /= 1024 // Divide size by 1024 to convert to the next higher unit
+		i++
+	}
+
+	return fmt.Sprintf("%.2f%s", size, units[i])
 }

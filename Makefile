@@ -1,7 +1,8 @@
 # Makefile for running syft-analyzer checks
 
 # List of image IDs (can be overridden from the command line)
-IMAGE_IDS ?= e8a9ee02cba6 2e1c800b7bd7
+IMAGE_IDS ?= 313b71942cfa a24c7c057ec8
+#ef0c1c2f2e79  cp-schmea
 
 # Default target for running checks followed by cleanup
 .PHONY: all
@@ -17,14 +18,19 @@ generate:
 	for image_id in $(IMAGE_IDS); do \
 		echo "Generating Syft GitHub JSON for image $$image_id..."; \
 		syft $$image_id -o github-json > syft_$$image_id.json; \
+		echo "Generating Dive json for image $$image_id..."; \
+		dive $$image_id -j dive_$$image_id.json; \
 	done
 
 .PHONY: analyze
 analyze:
-	echo "Running syft-analyzer..."
-	go run syft-analyzer.go syft_*.json
+	echo "Running oci-analyzer..."
+	$(eval SYFT_FILES := $(shell ls syft_*.json))
+	$(eval DIVE_FILES := $(shell ls dive_*.json))
+	go run oci-analyzer.go --syft-files "$(SYFT_FILES)" --dive-files "$(DIVE_FILES)"
 
 .PHONY: clean
 clean:
 	echo "Cleaning up json files..."
 	rm -f syft_*.json
+	rm -f dive_*.json
