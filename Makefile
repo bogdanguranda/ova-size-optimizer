@@ -1,8 +1,9 @@
 # Makefile for running syft-analyzer checks
 
 # List of image IDs (can be overridden from the command line)
-IMAGE_IDS ?= 313b71942cfa a24c7c057ec8
-#ef0c1c2f2e79  cp-schmea
+IMAGE_IDS ?= e8a9ee02cba6 2e1c800b7bd7
+# ef0c1c2f2e79  cp-schmea
+# bogdan: e8a9ee02cba6 2e1c800b7bd7
 
 # Default target for running checks followed by cleanup
 .PHONY: all

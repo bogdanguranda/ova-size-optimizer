@@ -2,24 +2,18 @@ package main
 
 import (
 	"encoding/json"
-<<<<<<< HEAD
+	"net/url"
+	"sort"
+
 	"flag"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
-=======
-	"fmt"
-	"net/url"
-	"os"
-	"regexp"
-	"sort"
-	"strings"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
->>>>>>> f6212a6 (Added Go mod support; basic visualization)
 )
 
 type SyftJSON struct {
@@ -33,7 +27,6 @@ type SyftJSON struct {
 	} `json:"manifests"`
 }
 
-<<<<<<< HEAD
 type DiveJSON struct {
 	Layers []struct {
 		Index     int    `json:"index"`
@@ -44,65 +37,46 @@ type DiveJSON struct {
 	} `json:"layer"`
 }
 
-func main() {
-	// if len(os.Args) < 2 {
-	// 	fmt.Println("Usage: syft-analyzer <syft_output_file1.json> ... <syft_output_fileN.json>")
-	// 	os.Exit(1)
-	// }
+type Info struct {
+	Count int
+	Size  string
+}
 
+type Stats struct {
+	BaseOS   map[string]*Info
+	Packages map[string]*Info
+	Runtimes map[string]*Info
+}
+
+func main() {
 	diveFiles := flag.String("dive-files", "", "list of dive files separated by whitespace")
 	syftFiles := flag.String("syft-files", "", "list of syft-files separated by whitespace")
 
-	// Parse the flags
 	flag.Parse()
 
 	syftFilesSlc := strings.Split(*syftFiles, " ")
 	diveFilesSlc := strings.Split(*diveFiles, " ")
 
-	distinctOS := make(map[string]map[string]struct{ size string })
-	distinctPackages := make(map[string]int)
-	distinctLanguages := make(map[string]int)
-	distinctRuntimes := make(map[string]int)
+	stats := Stats{
+		BaseOS:   make(map[string]*Info),
+		Packages: make(map[string]*Info),
+		Runtimes: make(map[string]*Info),
+	}
 
-	// parse the syft files and gather usefull information
 	for idx := range syftFilesSlc {
 		syftData, err := os.ReadFile(syftFilesSlc[idx])
 		if err != nil {
-			fmt.Printf("Error reading file: %v\n", err)
+			fmt.Printf("Error reading syft JSON: %v\n", err)
 			os.Exit(1)
 		}
 
 		diveData, err := os.ReadFile(diveFilesSlc[idx])
-=======
-type Stats struct {
-	BaseOS   map[string]int
-	Packages map[string]int
-	Runtimes map[string]int
-}
-
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: syft-analyzer <syft_output_file1.json> ... <syft_output_fileN.json>")
-		os.Exit(1)
-	}
-
-	// Aggregate information from Syft
-	stats := Stats{
-		BaseOS:   make(map[string]int),
-		Packages: make(map[string]int),
-		Runtimes: make(map[string]int),
-	}
-
-	for _, file := range os.Args[1:] {
-		data, err := os.ReadFile(file)
->>>>>>> f6212a6 (Added Go mod support; basic visualization)
 		if err != nil {
-			fmt.Printf("Error reading file: %v\n", err)
+			fmt.Printf("Error reading dive JSON: %v\n", err)
 			os.Exit(1)
 		}
 
 		var syftOutput SyftJSON
-<<<<<<< HEAD
 		err = json.Unmarshal(syftData, &syftOutput)
 		if err != nil {
 			fmt.Printf("Error parsing syft JSON: %v\n", err)
@@ -116,118 +90,77 @@ func main() {
 			os.Exit(1)
 		}
 
-		// Aggregate base OS statistics
-		osName, version := extractOSNameAndVersion(syftOutput.Metadata.Distro)
-		if distinctOS[osName] == nil {
-			distinctOS[osName] = make(map[string]struct{ size string })
-		}
-		distinctOS[osName][version] = struct{ size string }{convertBytesToHumanReadableString(diveOutput.Layers[0].SizeBytes)}
-
-		// Aggregate package statistics
-		for _, manifest := range syftOutput.Manifests {
-			for _, pkg := range manifest.Resolved {
-				distinctPackages[pkg.PackageURL]++
-				detectLanguageAndRuntime(pkg.PackageURL, distinctLanguages, distinctRuntimes)
-			}
-		}
-	}
-
-	// Print statistics
-	fmt.Println("Base OS Statistics:")
-	for os, versionsSet := range distinctOS {
-		versions := make([]string, 0, len(versionsSet))
-		osVersionSizes := make([]string, 0, len(versionsSet))
-		for version := range versionsSet {
-			versions = append(versions, version)
-			osVersionSizes = append(osVersionSizes, versionsSet[version].size)
-		}
-		fmt.Printf("OS: %s\n", os)
-		fmt.Printf("%d (versions: %s)\n", len(versionsSet), strings.Join(versions, ", "))
-		fmt.Printf("%d (sizes: %s)\n", len(versionsSet), strings.Join(osVersionSizes, ", "))
-	}
-
-	fmt.Println("\nPackage Statistics:")
-	for pkgURL, count := range distinctPackages {
-		pkgName := extractPackageName(pkgURL)
-		fmt.Printf("%s: %d\n", pkgName, count)
-	}
-
-	fmt.Println("\nRuntime Statistics:")
-	for runtime, count := range distinctRuntimes {
-		fmt.Printf("%s: %d\n", runtime, count)
-	}
-
-	// If we reach this point, all checks passed
-	fmt.Println("All checks passed.")
-}
-
-// extractOSNameAndVersion parses the distro string to extract the OS name and version
-func extractOSNameAndVersion(distro string) (osName, version string) {
-	// Regular expression to match the OS name and version
-	re := regexp.MustCompile(`pkg:generic/([^@]+)@([^?]+)`)
-	matches := re.FindStringSubmatch(distro)
-	if len(matches) > 2 {
-		osName = matches[1]
-		version = matches[2]
-	}
-	return
-}
-
-// detectLanguageAndRuntime updates the language and runtime statistics based on the package URL
-func detectLanguageAndRuntime(pkgURL string, languages map[string]int, runtimes map[string]int) {
-	if strings.Contains(pkgURL, "pkg:generic/java/") || strings.Contains(pkgURL, "pkg:maven/") {
-		languages["Java"]++
-=======
-		err = json.Unmarshal(data, &syftOutput)
-		if err != nil {
-			fmt.Printf("Error parsing JSON: %v\n", err)
-			os.Exit(1)
-		}
-
 		osNameWithVersion := extractOSNameWithVersion(syftOutput.Metadata.Distro)
-		stats.BaseOS[osNameWithVersion]++
+		if stats.BaseOS[osNameWithVersion] == nil {
+			stats.BaseOS[osNameWithVersion] = &Info{
+				Count: 1,
+				Size:  convertBytesToHumanReadableString(diveOutput.Layers[0].SizeBytes),
+			}
+		} else {
+			stats.BaseOS[osNameWithVersion].Count++
+		}
 
 		for _, manifest := range syftOutput.Manifests {
 			for _, pkg := range manifest.Resolved {
-				stats.Packages[extractPackageName(pkg.PackageURL)]++
+				packageName := extractPackageName(pkg.PackageURL)
+				if stats.Packages[packageName] == nil {
+					stats.Packages[packageName] = &Info{
+						Count: 1,
+						Size:  "0", // TODO: implement size determination for packages
+					}
+				} else {
+					stats.Packages[packageName].Count++
+				}
+
 				detectRuntime(pkg.PackageURL, stats.Runtimes)
 			}
 		}
 	}
-	printMapNicely(stats.Packages)
+
+	// debugMapPrint(stats.BaseOS)
+	// debugMapPrint(stats.Packages)
+	// debugMapPrint(stats.Runtimes)
 
 	// Generate statistics
+	duplicateBaseOS := getDuplicates(stats.BaseOS)
+	if err := generateStats(duplicateBaseOS, "BaseOS Statistics", "stats_base_os.png", 10); err != nil {
+		fmt.Printf("Error generating bar chart for packages: %v\n", err)
+		os.Exit(1)
+	}
+
 	duplicatePackages := getDuplicates(stats.Packages)
-	printMapNicely(duplicatePackages)
 	if err := generateStats(duplicatePackages, "Package Statistics", "stats_packages.png", 10); err != nil {
 		fmt.Printf("Error generating bar chart for packages: %v\n", err)
 		os.Exit(1)
 	}
 
 	duplicateRuntimes := getDuplicates(stats.Runtimes)
-	printMapNicely(duplicateRuntimes)
 	if err := generateStats(duplicateRuntimes, "Runtime Statistics", "stats_runtime.png", 10); err != nil {
 		fmt.Printf("Error generating bar chart for runtimes: %v\n", err)
 		os.Exit(1)
 	}
 
+	debugMapPrint(duplicateBaseOS)
+	debugMapPrint(duplicatePackages)
+	debugMapPrint(duplicateRuntimes)
+
 	fmt.Println("Finished successfully.")
 }
 
-func printMapNicely(entries map[string]int) {
+func debugMapPrint(entries map[string]*Info) {
 	fmt.Println("Entries print:")
 	fmt.Println(strings.Repeat("-", 40))
 
-	for key, count := range entries {
-		fmt.Printf("%-30s\t%d\n", key, count)
+	for key, info := range entries {
+		fmt.Printf("%-30s\t%d %s\n", key, info.Count, info.Size)
 	}
 }
 
-func getDuplicates(entries map[string]int) map[string]int {
-	duplicates := make(map[string]int)
-	for key, count := range entries {
-		if count >= 2 {
-			duplicates[key] = count
+func getDuplicates(entries map[string]*Info) map[string]*Info {
+	duplicates := make(map[string]*Info)
+	for key, info := range entries {
+		if info.Count >= 2 {
+			duplicates[key] = info
 		}
 	}
 	return duplicates
@@ -244,53 +177,29 @@ func extractOSNameWithVersion(distro string) (osNameWithVersion string) {
 	return osNameWithVersion
 }
 
-func detectRuntime(pkgURL string, runtimes map[string]int) {
+func detectRuntime(pkgURL string, runtimes map[string]*Info) {
+	runtime := ""
 	if strings.Contains(pkgURL, "pkg:generic/java/") || strings.Contains(pkgURL, "pkg:maven/") {
->>>>>>> f6212a6 (Added Go mod support; basic visualization)
 		if strings.Contains(pkgURL, "jre") || strings.Contains(pkgURL, "jdk") {
-			runtimes["Java"]++
+			runtime = "Java"
 		}
 	} else if strings.Contains(pkgURL, "pkg:python/") {
-<<<<<<< HEAD
-		languages["Python"]++
-=======
->>>>>>> f6212a6 (Added Go mod support; basic visualization)
 		if strings.Contains(pkgURL, "cpython") {
-			runtimes["Python"]++
+			runtime = "Python"
 		}
 	}
-<<<<<<< HEAD
-	// TODO: Add more language and runtime detection rules as needed
-}
+	// TODO: Add more runtime detection rules as needed
 
-// extractPackageName cleans up the package URL to a more readable format
-func extractPackageName(pkgURL string) string {
-	// Remove the query parameters
-	cleanURL := strings.Split(pkgURL, "?")[0]
-	// Remove the "pkg:" prefix
-	cleanURL = strings.TrimPrefix(cleanURL, "pkg:")
-	// Replace URL encoding with actual characters
-	cleanURL = strings.ReplaceAll(cleanURL, "%2B", "+")
-	cleanURL = strings.ReplaceAll(cleanURL, "%2F", "/")
-	return cleanURL
-}
-
-func convertBytesToHumanReadableString(sizeBytes int64) string {
-	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
-
-	if sizeBytes == 0 {
-		return "0B"
+	if runtime != "" {
+		if runtimes[runtime] == nil {
+			runtimes[runtime] = &Info{
+				Count: 1,
+				Size:  "0", // TODO: implement size determination for runtimes
+			}
+		} else {
+			runtimes[runtime].Count++
+		}
 	}
-	size := float64(sizeBytes)
-	i := 0
-	for size >= 1024 && i < len(units)-1 {
-		size /= 1024 // Divide size by 1024 to convert to the next higher unit
-		i++
-	}
-
-	return fmt.Sprintf("%.2f%s", size, units[i])
-=======
-	// TODO: Add more runtime detection rules as needed, e.g. Golang, Node.js, C/C++, C# ...
 }
 
 func extractPackageName(pkgURL string) string {
@@ -307,21 +216,40 @@ func extractPackageName(pkgURL string) string {
 	return nameWithVersionUrlDecoded
 }
 
-func generateStats(stats map[string]int, title string, filename string, topN int) error {
+func convertBytesToHumanReadableString(sizeBytes int64) string {
+	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
+
+	if sizeBytes == 0 {
+		return "0B"
+	}
+	size := float64(sizeBytes)
+	i := 0
+	for size >= 1024 && i < len(units)-1 {
+		size /= 1024 // Divide size by 1024 to convert to the next higher unit
+		i++
+	}
+
+	return fmt.Sprintf("%.2f%s", size, units[i])
+}
+
+func generateStats(stats map[string]*Info, title string, filename string, topN int) error {
+	if len(stats) == 0 {
+		fmt.Fprintf(os.Stderr, "Warn: No duplicates to generate stats for: %s\n", title)
+		return nil
+	}
+
 	p := plot.New()
 	p.Title.Text = title
 
-	// Create a slice of struct to sort map entries by value
 	type kv struct {
 		Key   string
 		Value int
 	}
 	var ss []kv
 	for k, v := range stats {
-		ss = append(ss, kv{k, v})
+		ss = append(ss, kv{k, v.Count})
 	}
 
-	// Sort the slice by value, and then by key if values are equal
 	sort.Slice(ss, func(i, j int) bool {
 		if ss[i].Value == ss[j].Value {
 			return ss[i].Key < ss[j].Key
@@ -329,15 +257,12 @@ func generateStats(stats map[string]int, title string, filename string, topN int
 		return ss[i].Value > ss[j].Value
 	})
 
-	// If topN is greater than the number of stats, adjust topN to the number of stats
 	if topN > len(ss) {
 		topN = len(ss)
 	}
 
-	// Take only the top N entries for the chart
 	ss = ss[:topN]
 
-	// Create the bars and labels for the top N entries
 	bars := make(plotter.Values, topN)
 	labels := make([]string, topN)
 	for i := 0; i < topN; i++ {
@@ -349,7 +274,7 @@ func generateStats(stats map[string]int, title string, filename string, topN int
 	if err != nil {
 		return err
 	}
-	bar.Horizontal = true // Make the bar chart horizontal
+	bar.Horizontal = true
 
 	p.Add(bar)
 	p.NominalY(labels...)
@@ -360,5 +285,4 @@ func generateStats(stats map[string]int, title string, filename string, topN int
 	}
 
 	return nil
->>>>>>> f6212a6 (Added Go mod support; basic visualization)
 }
