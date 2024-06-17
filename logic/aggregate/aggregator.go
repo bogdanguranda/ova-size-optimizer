@@ -5,8 +5,9 @@ import (
 )
 
 type Info struct {
-	Count int
-	Size  string
+	Count         int
+	Size          string
+	InstalledSize string
 }
 
 type Stats struct {
@@ -23,8 +24,8 @@ func NewStats() *Stats {
 	}
 }
 
-func ProcessData(stats *Stats, syftOutput *load.SyftJSON, diveOutput *load.DiveJSON) {
-	osNameWithVersion := DetectOSNameWithVersion(syftOutput.Metadata.Distro)
+func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJSONOutput *load.SyftJSON, diveOutput *load.DiveJSON) {
+	osNameWithVersion := DetectOSNameWithVersion(syftGithubJSONOutput.Metadata.Distro)
 	if stats.BaseOS[osNameWithVersion] == nil {
 		stats.BaseOS[osNameWithVersion] = &Info{
 			Count: 1,
@@ -34,13 +35,20 @@ func ProcessData(stats *Stats, syftOutput *load.SyftJSON, diveOutput *load.DiveJ
 		stats.BaseOS[osNameWithVersion].Count++
 	}
 
-	for _, manifest := range syftOutput.Manifests {
+	packageInfo := make(map[string]load.Metadata)
+	for _, packageArtifact := range syftJSONOutput.Artifacts {
+		packageName := DetectPackageName(packageArtifact.PUrl)
+		packageInfo[packageName] = packageArtifact.PackageMetadata
+	}
+
+	for _, manifest := range syftGithubJSONOutput.Manifests {
 		for _, pkg := range manifest.Resolved {
 			packageName := DetectPackageName(pkg.PackageURL)
 			if stats.Packages[packageName] == nil {
 				stats.Packages[packageName] = &Info{
-					Count: 1,
-					Size:  "0", // TODO: implement size determination for packages
+					Count:         1,
+					Size:          ConvertSizeBytesToHumanReadableString(packageInfo[packageName].Size),
+					InstalledSize: ConvertSizeBytesToHumanReadableString(packageInfo[packageName].InstalledSize),
 				}
 			} else {
 				stats.Packages[packageName].Count++

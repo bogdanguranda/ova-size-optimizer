@@ -13,19 +13,27 @@ import (
 
 func main() {
 	diveFiles := flag.String("dive-files", "", "list of dive files separated by whitespace")
-	syftFiles := flag.String("syft-files", "", "list of syft-files separated by whitespace")
+	syftGithubJSONFiles := flag.String("syft-github-json-files", "", "list of syft-files separated by whitespace exported in github-json format")
+	syftJSONFiles := flag.String("syft-json-files", "", "list of syft-files separated by whitespace exported in json format")
 
 	flag.Parse()
 
-	syftFilesSlc := strings.Split(*syftFiles, " ")
+	syftGithubJSONFilesSlc := strings.Split(*syftGithubJSONFiles, " ")
+	syftJSONFilesSlc := strings.Split(*syftJSONFiles, " ")
 	diveFilesSlc := strings.Split(*diveFiles, " ")
 
 	stats := aggregate.NewStats()
 
-	for idx := range len(syftFilesSlc) {
-		syftOutput, err := load.LoadSyftFile(syftFilesSlc[idx])
+	for idx := range len(syftGithubJSONFilesSlc) {
+		syftGithubJSONOutput, err := load.LoadGithubJsonSyftFile(syftGithubJSONFilesSlc[idx])
 		if err != nil {
-			fmt.Printf("Error processing Syft file: %v\n", err)
+			fmt.Printf("Error processing Github Json Syft file: %v\n", err)
+			os.Exit(1)
+		}
+
+		syftJSONOutput, err := load.LoadJsonSyftFile(syftJSONFilesSlc[idx])
+		if err != nil {
+			fmt.Printf("Error processing Json Syft file: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -35,12 +43,12 @@ func main() {
 			os.Exit(1)
 		}
 
-		aggregate.ProcessData(stats, syftOutput, diveOutput)
+		aggregate.ProcessData(stats, syftGithubJSONOutput, syftJSONOutput, diveOutput)
 	}
 
-	// aggregate.debugMapPrint(stats.BaseOS)
-	// aggregate.debugMapPrint(stats.Packages)
-	// aggregate.debugMapPrint(stats.Runtimes)
+	// aggregate.DebugMapPrint(stats.BaseOS)
+	// aggregate.DebugMapPrint(stats.Packages)
+	// aggregate.DebugMapPrint(stats.Runtimes)
 
 	duplicateBaseOS := aggregate.GetOnlyDuplicates(stats.BaseOS)
 	duplicatePackages := aggregate.GetOnlyDuplicates(stats.Packages)

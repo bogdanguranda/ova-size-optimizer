@@ -10,7 +10,7 @@ func DebugMapPrint(entries map[string]*Info) {
 	fmt.Println(strings.Repeat("-", 40))
 
 	for key, info := range entries {
-		fmt.Printf("%-30s\t%d %s\n", key, info.Count, info.Size)
+		fmt.Printf("%-30s\t%d %s\t%s \n", key, info.Count, info.Size, info.InstalledSize)
 	}
 }
 

@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-type SyftJSON struct {
+type SyftGithubJSON struct {
 	Metadata struct {
 		Distro string `json:"syft:distro"`
 	} `json:"metadata"`
@@ -16,13 +16,13 @@ type SyftJSON struct {
 	} `json:"manifests"`
 }
 
-func LoadSyftFile(file string) (*SyftJSON, error) {
+func LoadGithubJsonSyftFile(file string) (*SyftGithubJSON, error) {
 	syftData, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
 
-	var syftOutput SyftJSON
+	var syftOutput SyftGithubJSON
 	if err = json.Unmarshal(syftData, &syftOutput); err != nil {
 		return nil, err
 	}
