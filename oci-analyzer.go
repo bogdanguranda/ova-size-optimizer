@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	diveFiles := flag.String("dive-files", "", "list of dive files separated by whitespace")
 	syftGithubJSONFiles := flag.String("syft-github-json-files", "", "list of syft-files separated by whitespace exported in github-json format")
 	syftJSONFiles := flag.String("syft-json-files", "", "list of syft-files separated by whitespace exported in json format")
 
@@ -20,7 +19,6 @@ func main() {
 
 	syftGithubJSONFilesSlc := strings.Split(*syftGithubJSONFiles, " ")
 	syftJSONFilesSlc := strings.Split(*syftJSONFiles, " ")
-	diveFilesSlc := strings.Split(*diveFiles, " ")
 
 	stats := aggregate.NewStats()
 
@@ -37,13 +35,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		diveOutput, err := load.LoadDiveFile(diveFilesSlc[idx])
-		if err != nil {
-			fmt.Printf("Error processing Dive file: %v\n", err)
-			os.Exit(1)
-		}
-
-		aggregate.ProcessData(stats, syftGithubJSONOutput, syftJSONOutput, diveOutput)
+		aggregate.ProcessData(stats, syftGithubJSONOutput, syftJSONOutput)
 	}
 
 	// aggregate.DebugMapPrint(stats.BaseOS)
@@ -54,17 +46,17 @@ func main() {
 	duplicatePackages := aggregate.GetOnlyDuplicates(stats.Packages)
 	duplicateRuntimes := aggregate.GetOnlyDuplicates(stats.Runtimes)
 
-	if err := visualize.PlotStats(duplicateBaseOS, "BaseOS Statistics", "stats_base_os.png", 10); err != nil {
+	if err := visualize.PlotStats(duplicateBaseOS, "BaseOS Statistics", "stats-base-os.png", 10); err != nil {
 		fmt.Printf("Error generating bar chart for BaseOS: %v\n", err)
 		os.Exit(1)
 	}
 
-	if err := visualize.PlotStats(duplicatePackages, "Package Statistics", "stats_packages.png", 10); err != nil {
+	if err := visualize.PlotStats(duplicatePackages, "Package Statistics", "stats-packages.png", 10); err != nil {
 		fmt.Printf("Error generating bar chart for packages: %v\n", err)
 		os.Exit(1)
 	}
 
-	if err := visualize.PlotStats(duplicateRuntimes, "Runtime Statistics", "stats_runtimes.png", 10); err != nil {
+	if err := visualize.PlotStats(duplicateRuntimes, "Runtime Statistics", "stats-runtimes.png", 10); err != nil {
 		fmt.Printf("Error generating bar chart for runtimes: %v\n", err)
 		os.Exit(1)
 	}

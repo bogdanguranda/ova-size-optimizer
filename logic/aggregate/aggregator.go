@@ -24,12 +24,12 @@ func NewStats() *Stats {
 	}
 }
 
-func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJSONOutput *load.SyftJSON, diveOutput *load.DiveJSON) {
+func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJSONOutput *load.SyftJSON) {
 	osNameWithVersion := DetectOSNameWithVersion(syftGithubJSONOutput.Metadata.Distro)
 	if stats.BaseOS[osNameWithVersion] == nil {
 		stats.BaseOS[osNameWithVersion] = &Info{
 			Count: 1,
-			Size:  ConvertSizeBytesToHumanReadableString(diveOutput.Layers[0].SizeBytes),
+			Size:  "0", // TODO: implement this with something else, previous code was: ConvertSizeBytesToHumanReadableString(diveOutput.Layers[0].SizeBytes)
 		}
 	} else {
 		stats.BaseOS[osNameWithVersion].Count++
