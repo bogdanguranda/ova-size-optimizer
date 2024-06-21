@@ -13,18 +13,18 @@ type Info struct {
 type Stats struct {
 	BaseOS   map[string]*Info
 	Packages map[string]*Info
-	Runtimes map[string]*Info
+	Runtimes map[string]map[string]*Info //map["imageFile"]["runtime"]*Info
 }
 
 func NewStats() *Stats {
 	return &Stats{
 		BaseOS:   make(map[string]*Info),
 		Packages: make(map[string]*Info),
-		Runtimes: make(map[string]*Info),
+		Runtimes: make(map[string]map[string]*Info),
 	}
 }
 
-func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJSONOutput *load.SyftJSON) {
+func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJSONOutput *load.SyftJSON, fileName string) {
 	osNameWithVersion := DetectOSNameWithVersion(syftGithubJSONOutput.Metadata.Distro)
 	if stats.BaseOS[osNameWithVersion] == nil {
 		stats.BaseOS[osNameWithVersion] = &Info{
@@ -54,7 +54,7 @@ func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJS
 				stats.Packages[packageName].Count++
 			}
 
-			DetectRuntime(pkg.PackageURL, stats.Runtimes)
+			DetectRuntime(packageInfo[packageName], stats.Runtimes, fileName)
 		}
 	}
 }

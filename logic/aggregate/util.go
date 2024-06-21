@@ -14,6 +14,19 @@ func DebugMapPrint(entries map[string]*Info) {
 	}
 }
 
+func DebugRuntimeMapPrint(entries map[string]map[string]*Info) {
+	fmt.Println("Entries print:")
+	fmt.Println(strings.Repeat("-", 40))
+
+	for outerKey, innerMap := range entries {
+		fmt.Printf("%-30s\n", outerKey)
+		for innerKey, value := range innerMap {
+			fmt.Printf("\t%-30s: %s", innerKey, fmt.Sprintf("%d %s\t%s \n", value.Count, value.Size, value.InstalledSize))
+		}
+		fmt.Println(strings.Repeat("-", 40)) // Separator for each outer key
+	}
+}
+
 func GetOnlyDuplicates(entries map[string]*Info) map[string]*Info {
 	duplicates := make(map[string]*Info)
 	for key, info := range entries {
@@ -21,6 +34,28 @@ func GetOnlyDuplicates(entries map[string]*Info) map[string]*Info {
 			duplicates[key] = info
 		}
 	}
+	return duplicates
+}
+
+func GetOnlyDuplicatesRuntimes(entries map[string]map[string]*Info) map[string]*Info {
+	globalCounts := make(map[string]int)
+	for _, infoMap := range entries {
+		for key, info := range infoMap {
+			globalCounts[key] += info.Count
+		}
+	}
+
+	duplicates := make(map[string]*Info)
+	for _, infoMap := range entries {
+		for key, info := range infoMap {
+			if globalCounts[key] >= 2 {
+				fmt.Println(key, info, globalCounts[key])
+				info.Count = globalCounts[key]
+				duplicates[key] = info
+			}
+		}
+	}
+
 	return duplicates
 }
 
