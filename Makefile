@@ -1,10 +1,10 @@
 # Makefile for analyzing a multi-image OCI archive
 # Dependencies: gunzip, tar, jq, syft, skopeo
 
-COMPRESSED_MULTI_ARCHIVE = test-multi-archive.tar.gz
+COMPRESSED_MULTI_ARCHIVE ?= test-multi-archive.tar.gz
 
 TEMP_DIR = temp-oci
-MULTI_ARCHIVE = $(TEMP_DIR)/$(basename $(COMPRESSED_MULTI_ARCHIVE))
+MULTI_ARCHIVE = $(TEMP_DIR)/$(shell basename $(COMPRESSED_MULTI_ARCHIVE))
 MULTI_ARCHIVE_EXTRACTED_DIR = $(TEMP_DIR)/multi-archive-extracted
 INDIVIDUAL_ARCHIVES_DIR = $(TEMP_DIR)/individual-archives
 
