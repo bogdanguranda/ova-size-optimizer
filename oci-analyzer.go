@@ -54,9 +54,9 @@ func main() {
 		}
 	}
 
-	aggregate.DebugMapPrint(stats.BaseOS)
-	aggregate.DebugMapPrint(stats.Packages)
-	aggregate.DebugRuntimeMapPrint(stats.Runtimes)
+	// aggregate.DebugMapPrint(stats.BaseOS)
+	// aggregate.DebugMapPrint(stats.Packages)
+	// aggregate.DebugRuntimeMapPrint(stats.Runtimes)
 
 	duplicateBaseOS := aggregate.GetOnlyDuplicates(stats.BaseOS)
 	duplicatePackages := aggregate.GetOnlyDuplicates(stats.Packages)

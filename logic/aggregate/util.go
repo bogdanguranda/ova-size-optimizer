@@ -49,7 +49,6 @@ func GetOnlyDuplicatesRuntimes(entries map[string]map[string]*Info) map[string]*
 	for _, infoMap := range entries {
 		for key, info := range infoMap {
 			if globalCounts[key] >= 2 {
-				fmt.Println(key, info, globalCounts[key])
 				info.Count = globalCounts[key]
 				duplicates[key] = info
 			}
