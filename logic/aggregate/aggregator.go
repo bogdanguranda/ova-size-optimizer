@@ -2,6 +2,7 @@ package aggregate
 
 import (
 	"ova-size-optimizer/logic/load"
+	"strings"
 )
 
 type Info struct {
@@ -24,12 +25,20 @@ func NewStats() *Stats {
 	}
 }
 
-func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJSONOutput *load.SyftJSON, fileName string) {
+func ProcessData(stats *Stats, syftGithubJSONOutput *load.SyftGithubJSON, syftJSONOutput *load.SyftJSON, fileName, individualArchivePathDir string) {
+
+	// full name is <prefix>_<image name>.json
+	// eg. syft_json_cp-schema-registry
+	// we want to get the image name to reference the tar archive
+	tarImageName := strings.Split(strings.Split(fileName, "syft_json_")[1], ".json")[0] + ".tar"
+
+	// construct the full path to hte individual tar archive
+	tarPath := individualArchivePathDir + tarImageName
 	osNameWithVersion := DetectOSNameWithVersion(syftGithubJSONOutput.Metadata.Distro)
 	if stats.BaseOS[osNameWithVersion] == nil {
 		stats.BaseOS[osNameWithVersion] = &Info{
 			Count: 1,
-			Size:  "0", // TODO: implement this with something else, previous code was: ConvertSizeBytesToHumanReadableString(diveOutput.Layers[0].SizeBytes)
+			Size:  ConvertSizeBytesToHumanReadableString(GetBaseImageSize(tarPath)),
 		}
 	} else {
 		stats.BaseOS[osNameWithVersion].Count++

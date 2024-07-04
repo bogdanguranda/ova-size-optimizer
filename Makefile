@@ -57,7 +57,8 @@ analyze:
 	@$(eval SYFT_JSON_FILES := $(shell ls $(INDIVIDUAL_ARCHIVES_DIR)/syft_json_*.json))
 	@go run oci-analyzer.go \
 		--syft-github-json-files "$(SYFT_GITHUB_JSON_FILES)" \
-		--syft-json-files "$(SYFT_JSON_FILES)"
+		--syft-json-files "$(SYFT_JSON_FILES)" \
+		--individual-tar-dir-path "$(INDIVIDUAL_ARCHIVES_DIR)/"
 
 .PHONY: clean
 clean:

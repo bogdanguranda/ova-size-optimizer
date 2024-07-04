@@ -15,6 +15,7 @@ import (
 func main() {
 	syftGithubJSONFiles := flag.String("syft-github-json-files", "", "list of syft-files separated by whitespace exported in github-json format")
 	syftJSONFiles := flag.String("syft-json-files", "", "list of syft-files separated by whitespace exported in json format")
+	individualArchivePathDir := flag.String("individual-tar-dir-path", "", "dir of the individual tar archives")
 
 	flag.Parse()
 
@@ -38,7 +39,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		aggregate.ProcessData(stats, syftGithubJSONOutput, syftJSONOutput, fileName)
+		aggregate.ProcessData(stats, syftGithubJSONOutput, syftJSONOutput, fileName, *individualArchivePathDir)
 	}
 
 	// final parse
@@ -54,7 +55,7 @@ func main() {
 		}
 	}
 
-	// aggregate.DebugMapPrint(stats.BaseOS)
+	aggregate.DebugMapPrint(stats.BaseOS)
 	// aggregate.DebugMapPrint(stats.Packages)
 	// aggregate.DebugRuntimeMapPrint(stats.Runtimes)
 
