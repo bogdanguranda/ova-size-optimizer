@@ -58,7 +58,8 @@ analyze:
 	@go run oci-analyzer.go \
 		--syft-github-json-files "$(SYFT_GITHUB_JSON_FILES)" \
 		--syft-json-files "$(SYFT_JSON_FILES)" \
-		--individual-tar-dir-path "$(INDIVIDUAL_ARCHIVES_DIR)/"
+		--individual-tar-dir-path "$(INDIVIDUAL_ARCHIVES_DIR)/" \
+		--multi-image-archive-name "$(COMPRESSED_MULTI_ARCHIVE)"
 
 .PHONY: clean
 clean:

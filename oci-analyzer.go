@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -16,6 +17,7 @@ func main() {
 	syftGithubJSONFiles := flag.String("syft-github-json-files", "", "list of syft-files separated by whitespace exported in github-json format")
 	syftJSONFiles := flag.String("syft-json-files", "", "list of syft-files separated by whitespace exported in json format")
 	individualArchivePathDir := flag.String("individual-tar-dir-path", "", "dir of the individual tar archives")
+	multiImageArchiveName := flag.String("multi-image-archive-name", "", "name of the multi-image archive")
 
 	flag.Parse()
 
@@ -55,7 +57,7 @@ func main() {
 		}
 	}
 
-	aggregate.DebugMapPrint(stats.BaseOS)
+	// aggregate.DebugMapPrint(stats.BaseOS)
 	// aggregate.DebugMapPrint(stats.Packages)
 	// aggregate.DebugRuntimeMapPrint(stats.Runtimes)
 
@@ -63,17 +65,19 @@ func main() {
 	duplicatePackages := aggregate.GetOnlyDuplicates(stats.Packages)
 	duplicateRuntimes := aggregate.GetOnlyDuplicatesRuntimes(stats.Runtimes)
 
-	if err := visualize.PlotStats(duplicateBaseOS, "BaseOS Statistics", "stats-base-os.png", 10); err != nil {
+	archiveBaseName := filepath.Base(*multiImageArchiveName)
+	archiveName := strings.Split(archiveBaseName, ".")[0]
+	if err := visualize.PlotStats(duplicateBaseOS, "BaseOS Statistics", fmt.Sprintf("%s-stats-base-os.png", archiveName), 10); err != nil {
 		fmt.Printf("Error generating bar chart for BaseOS: %v\n", err)
 		os.Exit(1)
 	}
 
-	if err := visualize.PlotStats(duplicatePackages, "Package Statistics", "stats-packages.png", 10); err != nil {
+	if err := visualize.PlotStats(duplicatePackages, "Package Statistics", fmt.Sprintf("%s-stats-packages.png", archiveName), 10); err != nil {
 		fmt.Printf("Error generating bar chart for packages: %v\n", err)
 		os.Exit(1)
 	}
 
-	if err := visualize.PlotStats(duplicateRuntimes, "Runtime Statistics", "stats-runtimes.png", 10); err != nil {
+	if err := visualize.PlotStats(duplicateRuntimes, "Runtime Statistics", fmt.Sprintf("%s-stats-runtimes.png", archiveName), 10); err != nil {
 		fmt.Printf("Error generating bar chart for runtimes: %v\n", err)
 		os.Exit(1)
 	}

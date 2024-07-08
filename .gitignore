@@ -1,6 +1,6 @@
 .DS_Store
 
 test-*.tar.gz
-stats-*.png
+*stats-*.png
 archives
 performance-metrics.log
