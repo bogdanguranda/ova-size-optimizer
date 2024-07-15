@@ -16,30 +16,31 @@ all:
 	@$(MAKE) clean
 
 .PHONY: all-no-clean
-all-no-clean: prepare generate analyze
+all-no-clean: generate analyze
 
-.PHONY: prepare
-prepare:
-	@mkdir -p $(TEMP_DIR) $(MULTI_ARCHIVE_EXTRACTED_DIR) $(INDIVIDUAL_ARCHIVES_DIR)
+# .PHONY: prepare
+# prepare:
+# 	@mkdir -p $(TEMP_DIR) $(MULTI_ARCHIVE_EXTRACTED_DIR) $(INDIVIDUAL_ARCHIVES_DIR)
 
-	@echo "Decompressing $(COMPRESSED_MULTI_ARCHIVE) into $(MULTI_ARCHIVE)"
-	@gunzip -c $(COMPRESSED_MULTI_ARCHIVE) > $(MULTI_ARCHIVE)
+# 	@echo "Decompressing $(COMPRESSED_MULTI_ARCHIVE) into $(MULTI_ARCHIVE)"
+# 	@gunzip -c $(COMPRESSED_MULTI_ARCHIVE) > $(MULTI_ARCHIVE)
 
-	@echo "Extracting archive $(MULTI_ARCHIVE) into $(MULTI_ARCHIVE_EXTRACTED_DIR)"
-	@tar -xf $(MULTI_ARCHIVE) -C $(MULTI_ARCHIVE_EXTRACTED_DIR)
+# 	@echo "Extracting archive $(MULTI_ARCHIVE) into $(MULTI_ARCHIVE_EXTRACTED_DIR)"
+# 	@tar -xf $(MULTI_ARCHIVE) -C $(MULTI_ARCHIVE_EXTRACTED_DIR)
 
-	@echo "Searching for images in the multi-image archive..."
-	@jq -r '.manifests[] | @base64' $(MULTI_ARCHIVE_EXTRACTED_DIR)/index.json > $(MULTI_ARCHIVE_EXTRACTED_DIR)/manifests.txt
+# 	@echo "Searching for images in the multi-image archive..."
+# 	@jq -r '.manifests[] | @base64' $(MULTI_ARCHIVE_EXTRACTED_DIR)/index.json > $(MULTI_ARCHIVE_EXTRACTED_DIR)/manifests.txt
 
-	@cat $(MULTI_ARCHIVE_EXTRACTED_DIR)/manifests.txt | while read manifest; do \
-		manifest_json=$$(echo $$manifest | base64 --decode); \
-		image_name=$$(echo $$manifest_json | jq -r '.annotations["io.containerd.image.name"]' | sed 's|.*/\([^:]*\).*|\1|'); \
-		image_ref=$$(echo $$manifest_json | jq -r '.annotations["org.opencontainers.image.ref.name"]'); \
-		image_archive_src=$(MULTI_ARCHIVE):$${image_ref}; \
-		image_archive_dest=$(INDIVIDUAL_ARCHIVES_DIR)/$${image_name}-$${image_ref}.tar; \
-		echo "Extracting individual image from source $${image_archive_src} into $${image_archive_dest}"; \
-		skopeo copy oci-archive:$${image_archive_src} docker-archive:$${image_archive_dest}; \
-	done
+# 	@cat $(MULTI_ARCHIVE_EXTRACTED_DIR)/manifests.txt | while read manifest; do \
+# 		manifest_json=$$(echo $$manifest | base64 --decode); \
+# 		image_name=$$(echo $$manifest_json | jq -r '.annotations["io.containerd.image.name"]' | sed 's|.*/\([^:]*\).*|\1|'); \
+		
+# 		image_ref=$$(echo $$manifest_json | jq -r '.annotations["org.opencontainers.image.ref.name"]'); \
+# 		image_archive_src=$(MULTI_ARCHIVE):$${image_ref}; \
+# 		image_archive_dest=$(INDIVIDUAL_ARCHIVES_DIR)/$${image_name}-$${image_ref}.tar; \
+# 		echo "Extracting individual image from source $${image_archive_src} into $${image_archive_dest}"; \
+# 		skopeo copy oci-archive:$${image_archive_src} docker-archive:$${image_archive_dest}; \
+# 	done
 
 .PHONY: generate
 generate:

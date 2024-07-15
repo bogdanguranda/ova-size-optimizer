@@ -13,7 +13,8 @@ import (
 	"ova-size-optimizer/logic/visualize"
 )
 
-func main() {
+// TODO: change the implementation of this function and maybe the name
+func AnalizeSyft() {
 	syftGithubJSONFiles := flag.String("syft-github-json-files", "", "list of syft-files separated by whitespace exported in github-json format")
 	syftJSONFiles := flag.String("syft-json-files", "", "list of syft-files separated by whitespace exported in json format")
 	individualArchivePathDir := flag.String("individual-tar-dir-path", "", "dir of the individual tar archives")
