@@ -17,10 +17,13 @@ import (
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
 	"golang.org/x/sync/errgroup"
+
+	"ova-size-optimizer/logic/analyze"
+	"ova-size-optimizer/logic/visualize"
 )
 
 const (
-	tempDir                  = "temp-oci"
+	tempDir                  = "temp"
 	multiArchiveExtractedDir = tempDir + "/multi-archive-extracted"
 	ociImageIndexFilePath    = multiArchiveExtractedDir + "/index.json"
 	individualArchivesDir    = tempDir + "/individual-archives"
@@ -62,25 +65,38 @@ func main() {
 
 	file, err := os.Open(CompressedMultiArchive)
 	if err != nil {
-		fmt.Printf("Error opening compressed file %s: %v\n", CompressedMultiArchive, err)
+		fmt.Printf("error opening compressed file %s: %v\n", CompressedMultiArchive, err)
 		os.Exit(1)
 	}
 	defer file.Close()
 
 	if err := extractTarGz(file, MultiArchive, multiArchiveExtractedDir); err != nil {
-		fmt.Printf("Error extracting archive: %v\n", err)
+		fmt.Printf("error extracting archive: %v\n", err)
 		os.Exit(1)
 	}
 
 	indexContents, err := unmarshallIndex(ociImageIndexFilePath)
 	if err != nil {
-		fmt.Printf("Error extracting index contents: %v\n", err)
+		fmt.Printf("error extracting index contents: %v\n", err)
 		os.Exit(1)
 	}
 
 	err = transformOciToDockerImageFormat(indexContents)
 	if err != nil {
-		fmt.Printf("Error copying OCI image to Docker image: %v\n", err)
+		fmt.Printf("error copying OCI image to Docker image: %v\n", err)
+		os.Exit(1)
+	}
+
+	archivesStats, err := analyze.Analyze(individualArchivesDir)
+	if err != nil {
+		fmt.Printf("error anaylzing individual archives: %v\n", err)
+		os.Exit(1)
+	}
+
+	// TODO: change this to a HTML report
+	err = visualize.GenerateReport(archivesStats)
+	if err != nil {
+		fmt.Printf("error generating report: %v\n", err)
 		os.Exit(1)
 	}
 }

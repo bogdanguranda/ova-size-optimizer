@@ -1,7 +1,6 @@
 .DS_Store
 
+archives
+temp
 test-*.tar.gz
 *stats-*.png
-archives
-temp-oci
-performance-metrics.log

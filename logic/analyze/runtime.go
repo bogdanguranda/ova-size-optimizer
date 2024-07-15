@@ -1,11 +1,12 @@
-package aggregate
+package analyze
 
 import (
 	"fmt"
-	"ova-size-optimizer/logic/load"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"ova-size-optimizer/logic/load"
 )
 
 func DetectRuntime(packageProperties load.Metadata, runtimes map[string]map[string]*Info, fileName string) {
