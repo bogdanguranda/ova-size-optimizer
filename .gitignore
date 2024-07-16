@@ -2,5 +2,5 @@
 
 archives
 temp
-test-*.tar.gz
+*.tar.gz
 *stats-*.png
