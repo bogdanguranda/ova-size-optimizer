@@ -128,7 +128,7 @@ func imageCopy(ociImage, dockerImage string) error {
 
 	policy, err := signature.DefaultPolicy(nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting default policy: %v", err)
 	}
 	policyCtx, err := signature.NewPolicyContext(policy)
 	if err != nil {
