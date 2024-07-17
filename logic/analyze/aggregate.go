@@ -1,6 +1,9 @@
 package analyze
 
 import (
+	"fmt"
+
+	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
 )
 
@@ -28,45 +31,52 @@ func AggregateData(individualArchivesPathDir, archiveName string, archiveSbom *s
 	stats := NewStats()
 	stats.Runtimes[archiveName] = make(map[string]*Info)
 
-	// TODO: fix this; was: syftGithubJSONOutput.Metadata.Distro
+	osNameWithVersion := archiveSbom.Artifacts.LinuxDistribution.PrettyName
+	if stats.BaseOS[osNameWithVersion] == nil {
+		stats.BaseOS[osNameWithVersion] = &Info{
+			Count: 1,
+			Size:  ConvertSizeBytesToHumanReadableString(GetBaseImageSize(archiveName)),
+		}
+	} else {
+		stats.BaseOS[osNameWithVersion].Count++
+	}
 
-	// tarPath := individualArchivesPathDir + "/" + archiveName
-	// osNameWithVersion := DetectOSNameWithVersion(syftGithubJSONOutput.Metadata.Distro)
-	// if stats.BaseOS[osNameWithVersion] == nil {
-	// 	stats.BaseOS[osNameWithVersion] = &Info{
-	// 		Count: 1,
-	// 		Size:  ConvertSizeBytesToHumanReadableString(GetBaseImageSize(tarPath)),
-	// 	}
-	// } else {
-	// 	stats.BaseOS[osNameWithVersion].Count++
-	// }
+	for _, currentPackage := range archiveSbom.Artifacts.Packages.Sorted() {
+		if stats.Packages[currentPackage.Name] == nil {
+			size := 0
+			installedSize := 0
 
-	// TODO: fix this; was: syftJSONOutput.Artifacts
+			switch metadata := currentPackage.Metadata.(type) {
+			case pkg.ApkDBEntry:
+				size = metadata.Size
+				installedSize = metadata.InstalledSize
+			case pkg.DpkgDBEntry:
+				// doesn't have metadata.Size
+				installedSize = metadata.InstalledSize
+			case pkg.AlpmDBEntry:
+				size = metadata.Size
+				// doesn't have metadata.InstalledSize
+			case pkg.RpmDBEntry:
+				size = metadata.Size
+				// doesn't have metadata.InstalledSize
+			default:
+				fmt.Printf("error decoding metadata for package %s of archive %s \n", currentPackage.Name, archiveName)
+				continue
+			}
 
-	// packageInfo := make(map[string]load.Metadata)
-	// for _, packageArtifact := range syftJSONOutput.Artifacts {
-	// 	packageName := DetectPackageName(packageArtifact.PUrl)
-	// 	packageInfo[packageName] = packageArtifact.PackageMetadata
-	// }
+			stats.Packages[currentPackage.Name] = &Info{
+				Count:         1,
+				Size:          ConvertSizeBytesToHumanReadableString(int64(size)),
+				InstalledSize: ConvertSizeBytesToHumanReadableString(int64(installedSize)),
+			}
 
-	// TODO: fix this; was: syftGithubJSONOutput.Manifests
+		} else {
+			stats.Packages[currentPackage.Name].Count++
+		}
 
-	// for _, manifest := range syftGithubJSONOutput.Manifests {
-	// 	for _, pkg := range manifest.Resolved {
-	// 		packageName := DetectPackageName(pkg.PackageURL)
-	// 		if stats.Packages[packageName] == nil {
-	// 			stats.Packages[packageName] = &Info{
-	// 				Count:         1,
-	// 				Size:          ConvertSizeBytesToHumanReadableString(packageInfo[packageName].Size),
-	// 				InstalledSize: ConvertSizeBytesToHumanReadableString(packageInfo[packageName].InstalledSize),
-	// 			}
-	// 		} else {
-	// 			stats.Packages[packageName].Count++
-	// 		}
-
-	// 		DetectRuntime(packageInfo[packageName], stats.Runtimes, archiveName)
-	// 	}
-	// }
+		// TODO: fix this
+		// DetectRuntime(packageInfo[packageName], stats.Runtimes, archiveName)
+	}
 
 	// TODO: fix this
 
@@ -82,5 +92,5 @@ func AggregateData(individualArchivesPathDir, archiveName string, archiveSbom *s
 	// 	}
 	// }
 
-	return nil, nil
+	return stats, nil
 }

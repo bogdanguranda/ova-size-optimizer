@@ -43,9 +43,9 @@ func analyzeArchives(ctx context.Context, individualArchivesDir string) (map[str
 	}
 
 	for _, archive := range archives {
-		fmt.Println("Processing individual archive:", archive)
+		fmt.Println("Generating SBOM for individual archive:", archive)
 
-		archiveSbom, err := generateSbom(ctx, individualArchivesDir+"/"+archive)
+		archiveSbom, err := generateSbom(ctx, archive)
 		if err != nil {
 			return archiveWithSbom, fmt.Errorf("error generating SBOM for archive %s: %w", archive, err)
 		}

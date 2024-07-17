@@ -18,22 +18,22 @@ func GenerateReport(archivesStats map[string]*analyze.Stats) error {
 	fmt.Println("Started generating report...")
 
 	for archiveName, archiveStats := range archivesStats {
-		duplicateBaseOS := analyze.GetOnlyDuplicates(archiveStats.BaseOS)
-		duplicatePackages := analyze.GetOnlyDuplicates(archiveStats.Packages)
-		duplicateRuntimes := analyze.GetOnlyDuplicatesRuntimes(archiveStats.Runtimes)
+		// duplicateBaseOS := analyze.GetOnlyDuplicates(archiveStats.BaseOS)
+		// duplicatePackages := analyze.GetOnlyDuplicates(archiveStats.Packages)
+		// duplicateRuntimes := analyze.GetOnlyDuplicatesRuntimes(archiveStats.Runtimes)
 
 		archiveBaseName := filepath.Base(archiveName)
 		archiveName := strings.Split(archiveBaseName, ".")[0]
-		if err := PlotStats(duplicateBaseOS, "BaseOS Statistics", fmt.Sprintf("%s-stats-base-os.png", archiveName), 10); err != nil {
-			return fmt.Errorf("Error generating bar chart for BaseOS: %v\n", err)
+		if err := PlotStats(archiveStats.BaseOS, "BaseOS Statistics", fmt.Sprintf("%s-stats-base-os.png", archiveName), 10); err != nil {
+			return fmt.Errorf("error generating bar chart for BaseOS: %w", err)
 		}
 
-		if err := PlotStats(duplicatePackages, "Package Statistics", fmt.Sprintf("%s-stats-packages.png", archiveName), 10); err != nil {
-			return fmt.Errorf("Error generating bar chart for packages: %v\n", err)
+		if err := PlotStats(archiveStats.Packages, "Package Statistics", fmt.Sprintf("%s-stats-packages.png", archiveName), 10); err != nil {
+			return fmt.Errorf("error generating bar chart for packages: %w", err)
 		}
 
-		if err := PlotStats(duplicateRuntimes, "Runtime Statistics", fmt.Sprintf("%s-stats-runtimes.png", archiveName), 10); err != nil {
-			return fmt.Errorf("Error generating bar chart for runtimes: %v\n", err)
+		if err := PlotStats(archiveStats.Runtimes[archiveName], "Runtime Statistics", fmt.Sprintf("%s-stats-runtimes.png", archiveName), 10); err != nil {
+			return fmt.Errorf("error generating bar chart for runtimes: %w", err)
 		}
 	}
 
